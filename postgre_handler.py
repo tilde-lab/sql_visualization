@@ -17,31 +17,58 @@ class PostgreSQL_handler():
         host=personal_data["host"],
         port=personal_data["port"]
         )
-        self.tables = None
+        self.schema = []
+        self.tables = []
         self.tables_structure = {}
         self.connection = None
         self.foreign_keys_for_diagram_builder = {}
+        self.keys_in_table = {}
+        self.number_of_keys = {}
 
-    def get_tabel_names(self):
+    def get_schema_names(self):
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT schema_name \
+                        FROM information_schema.schemata \
+                        WHERE schema_name NOT LIKE 'pg_%' AND schema_name != 'information_schema';")
+        schema = [table[0] for table in cursor.fetchall()]
+        self.schema = schema
+        print(f'Found schema in the database: {len(schema)}')
+
+    def get_tabel_names(self) -> bool:
         """
         Func gets informathion about tabel names in db.
         """
-        cursor = self.conn.cursor()
-        cursor.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';")
-        tables = [table[0] for table in cursor.fetchall()]
-        self.tables = tables
-        print('Table name received successfully.')
+        for schema in self.schema:
+            cursor = self.conn.cursor()
 
-    def get_info_about_tables(self):
+            # Ignore virtual tables (view)
+            cursor.execute(f"SELECT table_name FROM information_schema.tables WHERE table_schema = '{schema}' " 
+                           f"AND table_type = 'BASE TABLE';")
+            tables = [table[0] for table in cursor.fetchall()]
+            if tables != []:
+                [self.tables.append(table) for table in tables]
+        if tables != []:
+            print('Table name received successfully.')
+            return True
+        else:
+            print('Attention! In db not tables.')
+            return False
+
+    def get_info_about_tables(self) -> bool:
         """
-        Func gets informathion about tabel structures (rows).
+        Func gets informathion about tabel structures (columns).
         """
         cursor = self.conn.cursor()
         for table in self.tables:
             cursor.execute(f"SELECT column_name FROM information_schema.columns WHERE table_name = '{table}';")
-            rows = [row[0] for row in cursor.fetchall()]
-            self.tables_structure[table] = rows
-        print('Table column data has been successfully retrieved')
+            columns = [column[0] for column in cursor.fetchall()]
+            self.tables_structure[table] = columns
+        if self.tables_structure != {}:
+            print('Table column data has been successfully retrieved')
+            return True
+        else:
+            print('In tables not columns at all.')
+            return False
 
     def get_info_about_keys(self):
         """
@@ -87,12 +114,29 @@ class PostgreSQL_handler():
         Finally name of the table and the name of the table associated with it, as well as the keys,
         are saved in self.foreign_keys_for_diagram_builder.
         """
-        for tabel in self.tables:
+        for table in self.tables:
             connection_from_tabel = []
-            for relation in self.connection:
-                if relation[0] == tabel:
-                    connection_from_tabel.append({relation[3]: [relation[1], relation[4]]})
-            self.foreign_keys_for_diagram_builder[tabel] = connection_from_tabel
+            if self.connection:
+                for relation in self.connection:
+                    if relation[0] == table:
+                        connection_from_tabel.append({relation[3]: [relation[1], relation[4]]})
+                self.foreign_keys_for_diagram_builder[table] = connection_from_tabel
+
+                for relation in self.connection:
+                    first_table = relation[0]
+                    first_key = relation[1]
+                    second_table = relation[3]
+                    second_key = relation[4]
+                    if first_table in self.keys_in_table:
+                        self.keys_in_table[first_table].append(first_key)
+                    else:
+                        self.keys_in_table[first_table] = [first_key]
+                    if second_table in self.keys_in_table:
+                        self.keys_in_table[second_table].append(second_key)
+                    else:
+                        self.keys_in_table[second_table] = [second_key]
+                for table in list(self.keys_in_table.items()):
+                    self.number_of_keys[table[0]] = len(table[1])
 
     def start_handler(self) -> Dict:
         """
@@ -100,11 +144,18 @@ class PostgreSQL_handler():
         It calls functions step by step to get data about table names, their structure, and foreign keys.
         :return dicts with structure of db and relationships by foreign keys.
         """
-        self.get_tabel_names()
-        self.get_info_about_tables()
-        self.get_info_about_keys()
-        self.data_preparation()
-        return self.tables_structure, \
-            self.foreign_keys_for_diagram_builder
+        self.get_schema_names()
+        answer = self.get_tabel_names()
+        if answer:
+            get_columns = self.get_info_about_tables()
+            if get_columns:
+                self.get_info_about_keys()
+                self.data_preparation()
+                return self.tables_structure, \
+                    self.foreign_keys_for_diagram_builder, \
+                    self.keys_in_table, \
+                    dict(sorted(self.number_of_keys.items(), key=lambda item: item[1], reverse=True))
+        else:
+            return False
 
 
