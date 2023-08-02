@@ -3,7 +3,7 @@ tables = {'User': ['id', 'user_name'],
           'Personal_data': ['id', 'login', 'password', 'date_of_b', 'phone_number', 'telegram'],
           'History_of_shopping': ['user_id', 'transaction_id', 'total_price', 'payment_type'],
           'Movement_of_goods': ['transaction_id', 'product_id', 'date', 'time'],
-          'Goods': ['product_id', 'name', 'price']
+          'Goods': ['product_id', 'name', 'price'],
           }
 
 communication = {

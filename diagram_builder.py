@@ -1,9 +1,18 @@
+"""
+This is where the diagram is being constructed.
+
+The PlantUML tool is used to create the diagram.
+It allows the use of a simpler DSL markup language. The DSL code is input to the PlantUML executable file,
+then it independently translates this code into the DOT language and sends it to Graphiz.
+Graphiz independently builds a diagram based on the requirements in the code.
+"""
 import subprocess
 import yaml
 
 class DiagramBuilder():
     """
     The class performs data processing about db. Builds a chart based on this data.
+    Its main task is to describe the code (diagram structure) in the DSL language.
     """
     def __init__(self, db_name: str):
         with open('config.yaml', encoding='utf-8') as f:
@@ -58,10 +67,9 @@ class DiagramBuilder():
         with open(f"{self.db_name}.txt", "w") as f:
             f.write(uml_code)
 
-
     def build_diagram(self):
         """
-        We perform the construction of a diagram using PlantUML.
+        Func is performing the construction of a diagram using PlantUML.
         The diagram is saved in png format.
         """
         subprocess.call(["java", "-jar", self.path_to_plantuml, f"{self.db_name}.txt", "-tpng"])
