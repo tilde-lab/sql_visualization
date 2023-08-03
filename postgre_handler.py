@@ -21,23 +21,29 @@ class PostgreSQL_handler():
         self.tables = []
         self.tables_structure = {}
         self.connection = None
-        self.foreign_keys_for_diagram_builder = {}
+        self.foreign_keys = {}
+        self.primary_keys = {}
         self.keys_in_table = {}
         self.number_of_keys = {}
 
     def get_schema_names(self):
+        """
+        Func gets informathion about schema names in db.
+        Ignore 'information_schema'.
+        """
         cursor = self.conn.cursor()
         cursor.execute("SELECT schema_name \
                         FROM information_schema.schemata \
                         WHERE schema_name NOT LIKE 'pg_%' AND schema_name != 'information_schema';")
         schema = [table[0] for table in cursor.fetchall()]
         self.schema = schema
-        print(f'Found schema in the database: {len(schema)}')
+        print(f'Found schemas in the database: {len(schema)}')
 
     def get_tabel_names(self) -> bool:
         """
         Func gets informathion about tabel names in db.
         """
+        tabels_in_schema = {}
         for schema in self.schema:
             cursor = self.conn.cursor()
 
@@ -47,6 +53,9 @@ class PostgreSQL_handler():
             tables = [table[0] for table in cursor.fetchall()]
             if tables != []:
                 [self.tables.append(table) for table in tables]
+                tabels_in_schema[schema] = tables
+        if tabels_in_schema != {}:
+            self.schema = tabels_in_schema
         if tables != []:
             print('Table name received successfully.')
             return True
@@ -63,6 +72,7 @@ class PostgreSQL_handler():
             cursor.execute(f"SELECT column_name FROM information_schema.columns WHERE table_name = '{table}';")
             columns = [column[0] for column in cursor.fetchall()]
             self.tables_structure[table] = columns
+        cursor.close()
         if self.tables_structure != {}:
             print('Table column data has been successfully retrieved')
             return True
@@ -70,7 +80,7 @@ class PostgreSQL_handler():
             print('In tables not columns at all.')
             return False
 
-    def get_info_about_keys(self):
+    def get_info_about_foriegn_keys(self):
         """
         Func gets information about restrictions on the tables.
         Information about foreign keys and relationships saved in self.connection.
@@ -106,13 +116,33 @@ class PostgreSQL_handler():
         else:
             print('All tables in the database do not have foreign keys.')
         cursor.close()
-        self.conn.close()
+
+    def get_info_about_primary_keys(self):
+        cursor = self.conn.cursor()
+        for schema in self.schema.keys():
+            for tabel in self.tables:
+                # a.attname - name of columns, pg_index - system table;
+                # Join two tables: pg_attribute and pg_attribute, by attrelid (identifier).
+                cursor.execute(f"""
+                    SELECT a.attname
+                    FROM pg_index i
+                    JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey)
+                    WHERE i.indrelid = '{schema}.{tabel}'::regclass AND i.indisprimary;
+                """)
+
+                results = cursor.fetchall()
+
+                if results != []:
+                    primary_keys = [i[0] for i in results]
+                    self.primary_keys[tabel] = primary_keys
+            else:
+                continue
 
     def data_preparation(self):
         """
         This is where information about relationships between tables is processed.
         Finally name of the table and the name of the table associated with it, as well as the keys,
-        are saved in self.foreign_keys_for_diagram_builder.
+        are saved in self.foreign_keys.
         """
         for table in self.tables:
             connection_from_tabel = []
@@ -120,7 +150,7 @@ class PostgreSQL_handler():
                 for relation in self.connection:
                     if relation[0] == table:
                         connection_from_tabel.append({relation[3]: [relation[1], relation[4]]})
-                self.foreign_keys_for_diagram_builder[table] = connection_from_tabel
+                self.foreign_keys[table] = connection_from_tabel
 
                 for relation in self.connection:
                     first_table = relation[0]
@@ -128,13 +158,16 @@ class PostgreSQL_handler():
                     second_table = relation[3]
                     second_key = relation[4]
                     if first_table in self.keys_in_table:
-                        self.keys_in_table[first_table].append(first_key)
+                        if first_key not in self.keys_in_table[first_table]:
+                            self.keys_in_table[first_table].append(first_key)
                     else:
                         self.keys_in_table[first_table] = [first_key]
                     if second_table in self.keys_in_table:
-                        self.keys_in_table[second_table].append(second_key)
+                        if second_key not in self.keys_in_table[second_table]:
+                            self.keys_in_table[second_table].append(second_key)
                     else:
                         self.keys_in_table[second_table] = [second_key]
+
                 for table in list(self.keys_in_table.items()):
                     self.number_of_keys[table[0]] = len(table[1])
 
@@ -149,12 +182,14 @@ class PostgreSQL_handler():
         if answer:
             get_columns = self.get_info_about_tables()
             if get_columns:
-                self.get_info_about_keys()
+                self.get_info_about_foriegn_keys()
+                self.get_info_about_primary_keys()
                 self.data_preparation()
                 return self.tables_structure, \
-                    self.foreign_keys_for_diagram_builder, \
+                    self.foreign_keys, \
                     self.keys_in_table, \
-                    dict(sorted(self.number_of_keys.items(), key=lambda item: item[1], reverse=True))
+                    dict(sorted(self.number_of_keys.items(), key=lambda item: item[1], reverse=True)), \
+                    self.primary_keys
         else:
             return False
 
