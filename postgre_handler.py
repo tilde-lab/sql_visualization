@@ -1,23 +1,22 @@
-import yaml
 import psycopg2
+from psycopg2 import Error
 from typing import Dict
+
 
 class PostgreSQL_handler():
     """
     The class gets the necessary information about the database.
     It stores information about tabel names, tabel structures, foreign keys and relationships.
     """
-    def __init__(self):
-        with open('config.yaml', encoding='utf-8') as f:
-            personal_data = yaml.safe_load(f)
-        self.conn = self.connection = psycopg2.connect(
-        dbname=personal_data["dbname"],
-        user=personal_data["user"],
-        password=personal_data["password"],
-        host=personal_data["host"],
-        port=personal_data["port"]
-        )
-        self.schema = []
+    def __init__(self, host, port, user, password, db_name, schema_name):
+        try:
+            self.conn = self.connection = psycopg2.connect(
+                dbname=db_name, user=user, password=password, host=host, port=port
+            )
+        except Error as e:
+            print(f"{e}")
+
+        self.schema = schema_name
         self.tables = []
         self.tables_structure = {}
         self.connection = None
@@ -26,37 +25,39 @@ class PostgreSQL_handler():
         self.keys_in_table = {}
         self.number_of_keys = {}
 
-    def get_schema_names(self):
+    def check_schema_names(self):
         """
-        Func gets informathion about schema names in db.
-        Ignore 'information_schema'.
+        Checks if the schema exists in db.
         """
-        cursor = self.conn.cursor()
-        cursor.execute("SELECT schema_name \
-                        FROM information_schema.schemata \
-                        WHERE schema_name NOT LIKE 'pg_%' AND schema_name != 'information_schema';")
-        schema = [table[0] for table in cursor.fetchall()]
-        self.schema = schema
-        print(f'Found schemas in the database: {len(schema)}')
+        try:
+            cursor = self.conn.cursor()
+        except:
+            print(f'Error connecting to the database, please check your personal data.')
+            return False
+        else:
+            cursor.execute("SELECT schema_name \
+                            FROM information_schema.schemata \
+                            WHERE schema_name NOT LIKE 'pg_%' AND schema_name != 'information_schema';")
+            schemas = [table[0] for table in cursor.fetchall()]
+            if self.schema in schemas:
+                return True
+            else:
+                print(f'The selected schema does not exist.')
+                return False
 
     def get_tabel_names(self) -> bool:
         """
         Func gets informathion about tabel names in db.
         """
-        tabels_in_schema = {}
-        for schema in self.schema:
-            cursor = self.conn.cursor()
 
-            # Ignore virtual tables (view)
-            cursor.execute(f"SELECT table_name FROM information_schema.tables WHERE table_schema = '{schema}' " 
-                           f"AND table_type = 'BASE TABLE';")
-            tables = [table[0] for table in cursor.fetchall()]
-            if tables != []:
-                [self.tables.append(table) for table in tables]
-                tabels_in_schema[schema] = tables
-        if tabels_in_schema != {}:
-            self.schema = tabels_in_schema
+        cursor = self.conn.cursor()
+
+        # Ignore virtual tables (view).
+        cursor.execute(f"SELECT table_name FROM information_schema.tables WHERE table_schema = '{self.schema}' " 
+                       f"AND table_type = 'BASE TABLE';")
+        tables = [table[0] for table in cursor.fetchall()]
         if tables != []:
+            [self.tables.append(table) for table in tables]
             print('Table name received successfully.')
             return True
         else:
@@ -74,13 +75,13 @@ class PostgreSQL_handler():
             self.tables_structure[table] = columns
         cursor.close()
         if self.tables_structure != {}:
-            print('Table column data has been successfully retrieved')
+            print('Table column data has been successfully retrieved.')
             return True
         else:
             print('In tables not columns at all.')
             return False
 
-    def get_info_about_foriegn_keys(self):
+    def get_info_about_foreign_keys(self):
         """
         Func gets information about restrictions on the tables.
         Information about foreign keys and relationships saved in self.connection.
@@ -112,31 +113,30 @@ class PostgreSQL_handler():
 
         if results and results != []:
             self.connection = results
-            print(f'Keys received successfully. Number of connections established: {len(self.connection)}')
+            print(f'Keys received successfully. Number of connections established: {len(self.connection)}.')
         else:
             print('All tables in the database do not have foreign keys.')
         cursor.close()
 
     def get_info_about_primary_keys(self):
         cursor = self.conn.cursor()
-        for schema in self.schema.keys():
-            for tabel in self.tables:
-                # a.attname - name of columns, pg_index - system table;
-                # Join two tables: pg_attribute and pg_attribute, by attrelid (identifier).
-                cursor.execute(f"""
-                    SELECT a.attname
-                    FROM pg_index i
-                    JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey)
-                    WHERE i.indrelid = '{schema}.{tabel}'::regclass AND i.indisprimary;
-                """)
+        for tabel in self.tables:
+            # a.attname - name of columns, pg_index - system table;
+            # Join two tables: pg_attribute and pg_attribute, by attrelid (identifier).
+            cursor.execute(f"""
+                SELECT a.attname
+                FROM pg_index i
+                JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey)
+                WHERE i.indrelid = '"{self.schema}"."{tabel}"'::regclass AND i.indisprimary;
+            """)
 
-                results = cursor.fetchall()
+            results = cursor.fetchall()
 
-                if results != []:
-                    primary_keys = [i[0] for i in results]
-                    self.primary_keys[tabel] = primary_keys
+            if results != []:
+                primary_keys = [i[0] for i in results]
+                self.primary_keys[tabel] = primary_keys
             else:
-                continue
+                print('Tables do not have primary keys.')
 
     def data_preparation(self):
         """
@@ -175,21 +175,23 @@ class PostgreSQL_handler():
         """
         Func starts processing data from the database.
         It calls functions step by step to get data about table names, their structure, and foreign keys.
-        :return dicts with structure of db and relationships by foreign keys.
+        return: dicts with structure of db and relationships by foreign keys.
         """
-        self.get_schema_names()
-        answer = self.get_tabel_names()
-        if answer:
-            get_columns = self.get_info_about_tables()
-            if get_columns:
-                self.get_info_about_foriegn_keys()
-                self.get_info_about_primary_keys()
-                self.data_preparation()
-                return self.tables_structure, \
-                    self.foreign_keys, \
-                    self.keys_in_table, \
-                    dict(sorted(self.number_of_keys.items(), key=lambda item: item[1], reverse=True)), \
-                    self.primary_keys
+        if self.check_schema_names():
+            answer = self.get_tabel_names()
+            if answer:
+                get_columns = self.get_info_about_tables()
+                if get_columns:
+                    self.get_info_about_foreign_keys()
+                    self.get_info_about_primary_keys()
+                    self.data_preparation()
+                    return self.tables_structure, \
+                        self.foreign_keys, \
+                        self.keys_in_table, \
+                        dict(sorted(self.number_of_keys.items(), key=lambda item: item[1], reverse=True)), \
+                        self.primary_keys
+            else:
+                return False
         else:
             return False
 
