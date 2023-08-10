@@ -1,7 +1,9 @@
 import psycopg2
 from psycopg2 import Error
 from typing import Dict
-
+from eralchemy import render_er
+import os
+from datetime import datetime
 
 class PostgreSQL_handler():
     """
@@ -217,5 +219,33 @@ class PostgreSQL_handler():
                 return False
         else:
             return False
+
+
+class ERAlchemyHandler():
+    """
+    Class performs building diagram by 'ERAlchemy'.
+    It accesses an existing table by path and builds a diagram.
+    Unlike other methods, it does not need to provide ready-made data.
+    """
+    def __init__(self, db_name: str, user_name: str, password: str, host: str):
+        self.name_db = db_name
+        self.user_name = user_name
+        self.password = password
+        self.host = host
+        self.date_today = datetime.now().date().strftime('%Y-%m-%d')
+
+    def start_handler(self):
+        if not os.path.exists('diagram_folder'):
+            os.makedirs('diagram_folder')
+
+        url = f'postgresql://{self.user_name}:{self.password}@{self.host}/{self.name_db}'
+        output_path = f'./diagram_folder/{self.name_db}_{self.date_today}_.png'
+        try:
+            render_er(url, output_path)
+        except:
+            print(r"Failed launched 'ERAlchemy'.")
+        else:
+            print(r"Successfully launched 'ERAlchemy'.")
+
 
 

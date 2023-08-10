@@ -117,6 +117,20 @@ class PlantUMLBilder():
                      '@enduml'
         return uml_code
 
+    def together_allocation(self, communication):
+        code = ''
+        for tabel in communication.keys():
+            tabel_info = communication[tabel]
+            if tabel_info != []:
+                code_for_tabel = '\n\ntogether {'+f'\nclass {tabel}\n'
+                if len(tabel_info) > 2:
+                    for tabel_to in tabel_info:
+                        code_for_tabel += f'class {list(tabel_to.keys())[0]}\n'
+                    code_for_tabel += '}\n'
+                    code += code_for_tabel
+        if code != '':
+            return code
+
     def block_allocation(self, communication: dict, tabel_from: str) -> bool:
         """
         Func decides on the order in which related blocks are placed.
@@ -208,6 +222,7 @@ class PlantUMLBilder():
         self.save_uml_code(uml_code, tables_structure)
         self.build_diagram()
         self.delete_uml_code_file()
+        print("Successfully launched 'PlantUMLBilder'.")
 
 
 

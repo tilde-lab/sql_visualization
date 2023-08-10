@@ -4,10 +4,12 @@ Program launch.
 The program uses from the console. To run it, you need to go to the project directory,
 use the command in the console:
 
-$ python main.py --host HOST --port PORT --user USER --password PASSWORD --db_name DB_NAME --schema_name SCHEMA_NAME --engine ENGINE
+$ python main.py --host HOST --port PORT --user USER --password PASSWORD
+--db_name DB_NAME --schema_name SCHEMA_NAME --engine ENGINE
 """
 import argparse
 from diagram_builder import PlantUMLBilder
+from postgre_handler import ERAlchemyHandler
 from postgre_handler import PostgreSQL_handler
 from dbml_renderer_handler import DBMLRenderer
 
@@ -26,11 +28,13 @@ def main(host, port, user, password, db_name, schema_name, engine=None):
                 PlantUMLBilder(db_name).start_handler(
                     tables_structure, foreign_keys_for_diagram_builder, keys_in_table, primary_keys
                 )
-            if engine == 'dbml-r':
+            elif engine == 'dbml-r':
                 DBMLRenderer(db_name).start_handler(
                     tables_structure, foreign_keys_for_diagram_builder, primary_keys, column_types
                 )
-            # Will doing diagrams by 2 way if type of engine does not choose.
+            elif engine == 'eralchemy':
+                ERAlchemyHandler(db_name, user, password, host).start_handler()
+            # Will doing diagrams by 3 way if type of engine does not choose.
             else:
                 DBMLRenderer(db_name).start_handler(
                      tables_structure, foreign_keys_for_diagram_builder, primary_keys, column_types
@@ -38,6 +42,7 @@ def main(host, port, user, password, db_name, schema_name, engine=None):
                 PlantUMLBilder(db_name).start_handler(
                     tables_structure, foreign_keys_for_diagram_builder, keys_in_table, primary_keys
                 )
+                ERAlchemyHandler(db_name, user, password, host).start_handler()
 
 # Launching the program from console.
 if __name__ == "__main__":
@@ -49,10 +54,14 @@ if __name__ == "__main__":
     parser.add_argument("--db_name", required=True, help="Database name")
     parser.add_argument("--schema_name", required=True, help="Schema name")
     parser.add_argument(
-        "--engine", required=True, help="Select how the diagram is rendered. Available 2 type.\n"
-                         "PlantUML - write 'plantuml'.\nDBML-renderer - write 'dbml-r'.")
+        "--engine",
+        help="Select how the diagram is rendered. Available 2 type.\n"
+             "PlantUML - write 'plantuml'.\nDBML-renderer - write 'dbml-r'.\n"
+             "Eralchemy - write 'eralchemy'."
+    )
 
     args = parser.parse_args()
     main(args.host, args.port, args.user, args.password, args.db_name, args.schema_name, args.engine)
 
+# python main.py --host 127.0.0.1 --port 5432 --user postgres --password nikita4429 --db_name cinema --schema_name public --engine dbml-r
 
