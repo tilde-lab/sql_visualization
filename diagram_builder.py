@@ -3,15 +3,15 @@ This is where the diagram is being constructed.
 
 The PlantUML tool is used to create the diagram.
 It allows the use of a simpler DSL markup language. The DSL code is input to the PlantUML executable file,
-then it independently translates this code into the DOT language and sends it to Graphiz.
-Graphiz independently builds a diagram based on the requirements in the code.
+then it independently translates this code into the DOT language and sends it to Graphviz.
+Graphviz independently builds a diagram based on the requirements in the code.
 """
 import subprocess
 from datetime import datetime
 import os
 
 
-class DiagramBuilder():
+class PlantUMLBilder():
     """
     The class performs data processing about db. Builds a chart based on this data.
     Its main task is to describe the code (diagram structure) in the DSL language.

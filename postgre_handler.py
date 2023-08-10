@@ -24,6 +24,7 @@ class PostgreSQL_handler():
         self.primary_keys = {}
         self.keys_in_table = {}
         self.number_of_keys = {}
+        self.column_types = {}
 
     def check_schema_names(self):
         """
@@ -171,6 +172,26 @@ class PostgreSQL_handler():
                 for table in list(self.keys_in_table.items()):
                     self.number_of_keys[table[0]] = len(table[1])
 
+    def get_column_types(self):
+        """
+        Func gets info about type of column in tables.
+        """
+        cursor = self.conn.cursor()
+        for tabel in self.tables:
+            cursor.execute(f" \
+                SELECT column_name, data_type \
+                FROM information_schema.columns \
+                WHERE table_name = '{tabel}' \
+            ")
+            results = cursor.fetchall()
+            tabel_data = {}
+            if results != []:
+                for column_data in results:
+                    column = column_data[0]
+                    type_c = column_data[1]
+                    tabel_data[column] = type_c
+                self.column_types[tabel] = tabel_data
+
     def start_handler(self) -> Dict:
         """
         Func starts processing data from the database.
@@ -182,6 +203,7 @@ class PostgreSQL_handler():
             if answer:
                 get_columns = self.get_info_about_tables()
                 if get_columns:
+                    self.get_column_types()
                     self.get_info_about_foreign_keys()
                     self.get_info_about_primary_keys()
                     self.data_preparation()
@@ -189,7 +211,8 @@ class PostgreSQL_handler():
                         self.foreign_keys, \
                         self.keys_in_table, \
                         dict(sorted(self.number_of_keys.items(), key=lambda item: item[1], reverse=True)), \
-                        self.primary_keys
+                        self.primary_keys, \
+                        self.column_types
             else:
                 return False
         else:
