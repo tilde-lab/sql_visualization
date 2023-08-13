@@ -63,5 +63,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
     main(args.host, args.port, args.user, args.password, args.db_name, args.schema_name, args.engine)
 
-# python main.py --host 127.0.0.1 --port 5432 --user postgres --password nikita4429 --db_name cinema --schema_name public --engine dbml-r
 

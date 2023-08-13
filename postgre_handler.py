@@ -115,7 +115,11 @@ class PostgreSQL_handler():
         results = cursor.fetchall()
 
         if results and results != []:
-            self.connection = results
+            keys = []
+            for el in results:
+                if el not in keys:
+                    keys.append(el)
+            self.connection = keys
             print(f'Keys received successfully. Number of connections established: {len(self.connection)}.')
         else:
             print('All tables in the database do not have foreign keys.')

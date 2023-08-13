@@ -22,22 +22,28 @@ class PlantUMLBilder():
         self.path_to_plantuml = "./plantuml.jar"
         self.db_name = db_name
         self.keys_to_bold = []
-        # self.colors_for_link = [r'[#f51505]', r'[#877951]', r'[#0057f7]',
-        #                         r'[#21a105]', r'[#eb8b05]', r'[#d005eb]',
-        #                         r'[#b80263]', r'[#0091a1]', r'[#00a173]',
-        #                         r'[#7815cf]', r'[#afb500]', r'[#cf6967]']
+        self.numeric_of_conn = {}
         # bold version.
         self.colors_for_link = [r'[#f51505,bold]', r'[#877951,bold]', r'[#0057f7,bold]',
                                 r'[#21a105,bold]', r'[#eb8b05,bold]', r'[#d005eb,bold]',
                                 r'[#b80263,bold]', r'[#0091a1,bold]', r'[#00a173,bold]',
                                 r'[#7815cf,bold]', r'[#afb500,bold]', r'[#cf6967,bold]']
 
+    def calculate_number_of_links(self, communication):
+        for t_f in list(communication.keys()):
+            self.numeric_of_conn[t_f] = len(communication[t_f])
+
+        for t_f in list(communication.keys()):
+            if communication[t_f] != []:
+                for conn in communication[t_f]:
+                    self.numeric_of_conn[list(conn.keys())[0]] += 1
+
     def constructor(
             self, tables: dict, communication: dict, keys_in_table:
             dict, primary_key: dict
     ) -> str:
         """
-        Func includes code development for plotting charts.
+        Func includes code development for plotting diagram.
         tables: dict with name of the tables, name of column.
         communication: dict with data about relationships between tables.
         keys_in_table: dict with foreign key names.
@@ -45,6 +51,7 @@ class PlantUMLBilder():
         """
         tables_code = ''
         communication_code = ''
+        self.calculate_number_of_links(communication)
 
         for t in tables.keys():
             columns = tables[t]
@@ -82,6 +89,11 @@ class PlantUMLBilder():
                                                                '}\n'
             tables_code += table_code
 
+
+        # together_allocation = self.together_allocation(communication)
+        # if together_allocation:
+        #     tables_code += self.together_allocation(communication)
+
         color_for_keys = self.link_color_selection(communication)
         done_tabel = []
 
@@ -95,18 +107,18 @@ class PlantUMLBilder():
 
                 if (table_from, key_from_start, key_from_finish, tabel_to) not in done_tabel:
                     color = color_for_keys[(table_from, key_from_start)]
-                    from_left_to_right = self.block_allocation(communication, table_from)
+                    from_left_to_right = self.block_allocation(communication, table_from, tabel_to)
                     if from_left_to_right:
-                        relation = \
-                            f'{tabel_to}::{key_from_finish} --{color}' \
-                            f' {table_from}::{key_from_start}\n'
-                    else:
                         relation = \
                             f' {table_from}::{key_from_start} --{color}' \
                             f' {tabel_to}::{key_from_finish}\n'
+                    else:
+                        relation = \
+                            f'{tabel_to}::{key_from_finish} --{color}' \
+                            f' {table_from}::{key_from_start}\n'
                     connection += relation
-                    done_tabel.append((table_from, key_from_start, key_from_finish, tabel_to))
-                    done_tabel.append((tabel_to, key_from_finish, key_from_start, table_from))
+                    # done_tabel.append((table_from, key_from_start, key_from_finish, tabel_to))
+                    # done_tabel.append((tabel_to, key_from_finish, key_from_start, table_from))
                     communication_code += connection
 
         uml_code = '@startuml\n' \
@@ -114,41 +126,62 @@ class PlantUMLBilder():
                    'left to right direction\n' \
                    + f'\n{tables_code}\n' \
                    + f'{communication_code}\n' \
+                   + f'remove @unlinked\n' \
                      '@enduml'
         return uml_code
 
     def together_allocation(self, communication):
-        code = ''
+        code = '\n\ntogether {'
+        # TODO: I can make hiden link. It will help group unlinked tabel.
+        # tabel_nolinked = []
         for tabel in communication.keys():
-            tabel_info = communication[tabel]
-            if tabel_info != []:
-                code_for_tabel = '\n\ntogether {'+f'\nclass {tabel}\n'
-                if len(tabel_info) > 2:
-                    for tabel_to in tabel_info:
-                        code_for_tabel += f'class {list(tabel_to.keys())[0]}\n'
-                    code_for_tabel += '}\n'
-                    code += code_for_tabel
+            if self.numeric_of_conn[tabel] == 0:
+                code += f'\nclass {tabel}'
         if code != '':
+            for tabel in communication.keys():
+                if self.numeric_of_conn[tabel] == max(self.numeric_of_conn.values()):
+                    code += f'\nclass {tabel}\n'
+            code += '}\n'
             return code
 
-    def block_allocation(self, communication: dict, tabel_from: str) -> bool:
+    def block_allocation(self, communication: dict, tabel_from: str, tabel_to) -> bool:
         """
         Func decides on the order in which related blocks are placed.
         return: bool.
         """
-        data_about_communication = communication[tabel_from]
-        if len(data_about_communication) > 4:
+        print(tabel_from, tabel_to)
+        if tabel_from not in self.construction_stage or tabel_to not in self.construction_stage:
+            if tabel_from not in self.construction_stage and tabel_to not in self.construction_stage:
+                self.construction_stage[tabel_from] = 1
+                self.construction_stage[tabel_to] = 1
             if tabel_from not in self.construction_stage:
                 self.construction_stage[tabel_from] = 1
-                return True
-            else:
+                self.construction_stage[tabel_to] += 1
+            if tabel_to not in self.construction_stage:
+                self.construction_stage[tabel_to] = 1
                 self.construction_stage[tabel_from] += 1
-                # communication will do from right to left.
-                if len(data_about_communication) // 2 < self.construction_stage[tabel_from]:
-                    return False
-                # communication will do from left to right.
-                else:
-                    return True
+        else:
+            self.construction_stage[tabel_from] += 1
+            self.construction_stage[tabel_to] += 1
+
+        # if 'tabel_from' have a lot of links
+        if self.numeric_of_conn[tabel_from] > 2 and self.numeric_of_conn[tabel_to] <= 3:
+
+            # communication will do from right to left.
+            if self.numeric_of_conn[tabel_from] // 2 < self.construction_stage[tabel_from]:
+                return False
+            # communication will do from left to right.
+            else:
+                return True
+
+            # if 'tabel_to' have a lot of links
+        elif self.numeric_of_conn[tabel_to] > 2:
+            # communication will do from right to left.
+            if self.numeric_of_conn[tabel_to] // 2 < self.construction_stage[tabel_to]:
+                return True
+            # communication will do from left to right.
+            else:
+                return False
         else:
             return True
 
