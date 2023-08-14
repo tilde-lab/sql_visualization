@@ -30,6 +30,9 @@ class PlantUMLBilder():
                                 r'[#7815cf,bold]', r'[#afb500,bold]', r'[#cf6967,bold]']
 
     def calculate_number_of_links(self, communication):
+        """
+        Here the number of links in each table is calculated.
+        """
         for t_f in list(communication.keys()):
             self.numeric_of_conn[t_f] = len(communication[t_f])
 
@@ -89,11 +92,6 @@ class PlantUMLBilder():
                                                                '}\n'
             tables_code += table_code
 
-
-        # together_allocation = self.together_allocation(communication)
-        # if together_allocation:
-        #     tables_code += self.together_allocation(communication)
-
         color_for_keys = self.link_color_selection(communication)
         done_tabel = []
 
@@ -132,8 +130,7 @@ class PlantUMLBilder():
 
     def together_allocation(self, communication):
         code = '\n\ntogether {'
-        # TODO: I can make hiden link. It will help group unlinked tabel.
-        # tabel_nolinked = []
+        # TODO: I can make hiden link. It will help group unlinked tabel. (now i remove unlinked tabels)
         for tabel in communication.keys():
             if self.numeric_of_conn[tabel] == 0:
                 code += f'\nclass {tabel}'
@@ -149,7 +146,7 @@ class PlantUMLBilder():
         Func decides on the order in which related blocks are placed.
         return: bool.
         """
-        print(tabel_from, tabel_to)
+        # Add stage of implemented link for tracking in next.
         if tabel_from not in self.construction_stage or tabel_to not in self.construction_stage:
             if tabel_from not in self.construction_stage and tabel_to not in self.construction_stage:
                 self.construction_stage[tabel_from] = 1

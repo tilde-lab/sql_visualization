@@ -36,6 +36,9 @@ class DBMLRenderer():
         return type_for_column
 
     def calculate_number_of_links(self, communication):
+        """
+        Here the number of links in each table is calculated.
+        """
         for t_f in list(communication.keys()):
             self.numeric_of_conn[t_f] = len(communication[t_f])
 
@@ -55,15 +58,16 @@ class DBMLRenderer():
         dbml_code = ""
         # Creates code with information about tables structure.
         for tabel in tables_structure.keys():
-            tabel_code = f"Table {tabel} "+"{\n"
-            for column in tables_structure[tabel]:
-                column_type = self.define_column_type(column_types, tabel, column)
-                if column in primary_keys[tabel]:
-                    tabel_code += f'{column} {column_type} [primary key]\n'
-                else:
-                    tabel_code += f'{column} {column_type}\n'
-            tabel_code += '}\n\n'
-            dbml_code += tabel_code
+            if self.numeric_of_conn[tabel] > 0:
+                tabel_code = f"Table {tabel} "+"{\n"
+                for column in tables_structure[tabel]:
+                    column_type = self.define_column_type(column_types, tabel, column)
+                    if column in primary_keys[tabel]:
+                        tabel_code += f'{column} {column_type} [primary key]\n'
+                    else:
+                        tabel_code += f'{column} {column_type}\n'
+                tabel_code += '}\n\n'
+                dbml_code += tabel_code
 
         # Creates code with information about connections between tables.
         for tabel_from in foreign_keys_for_diagram_builder.keys():
@@ -73,13 +77,11 @@ class DBMLRenderer():
                 key_to = conn_info[tabel_to][1]
 
                 # FIXME: not implemented direction.
-                # direction = self.block_allocation(foreign_keys_for_diagram_builder, tabel_from, tabel_to)
-                # if direction:
-
-                conn_code = f"Ref: {tabel_from}.{key_from} > {tabel_to}.{key_to}\n"
-
-                # else:
-                #     conn_code = f"Ref: {tabel_to}.{key_to} < {tabel_from}.{key_from}\n"
+                direction = self.block_allocation(foreign_keys_for_diagram_builder, tabel_from, tabel_to)
+                if direction:
+                    conn_code = f"Ref: {tabel_from}.{key_from} > {tabel_to}.{key_to}\n"
+                else:
+                    conn_code = f"Ref: {tabel_to}.{key_to} < {tabel_from}.{key_from}\n"
                 if conn_code not in dbml_code:
                     dbml_code += conn_code
         return dbml_code
@@ -104,7 +106,7 @@ class DBMLRenderer():
             self.construction_stage[tabel_from] += 1
             self.construction_stage[tabel_to] += 1
         # если tabel_from многосвязный
-        if self.numeric_of_conn[tabel_from] > 3 and self.numeric_of_conn[tabel_to] <= 3:
+        if self.numeric_of_conn[tabel_from] > 4 and self.numeric_of_conn[tabel_to] <= 4:
 
             # communication will do from right to left.
             if self.numeric_of_conn[tabel_from] // 2 < self.construction_stage[tabel_from]:
@@ -114,7 +116,7 @@ class DBMLRenderer():
                 return True
 
             # если tabel_to многосвязный
-        elif self.numeric_of_conn[tabel_to] > 3:
+        elif self.numeric_of_conn[tabel_to] > 4:
             # communication will do from right to left.
             if self.numeric_of_conn[tabel_to] // 2 < self.construction_stage[tabel_to]:
                 return True
