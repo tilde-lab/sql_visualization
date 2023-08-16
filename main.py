@@ -14,7 +14,7 @@ from postgre_handler import PostgreSQL_handler
 from dbml_renderer_handler import DBMLRenderer
 
 
-def main(host, port, user, password, db_name, schema_name, engine=None):
+def main(host, port, user, password, db_name, schema_name, engine=None, direction='1'):
     try:
         answer = \
             PostgreSQL_handler(host, port, user, password, db_name, schema_name).start_handler()
@@ -26,21 +26,21 @@ def main(host, port, user, password, db_name, schema_name, engine=None):
                 number_of_keys, primary_keys, column_types = answer
             if engine == 'plantuml':
                 PlantUMLBilder(db_name).start_handler(
-                    tables_structure, foreign_keys_for_diagram_builder, keys_in_table, primary_keys
+                    tables_structure, foreign_keys_for_diagram_builder, keys_in_table, primary_keys, direction
                 )
             elif engine == 'dbml-r':
                 DBMLRenderer(db_name).start_handler(
-                    tables_structure, foreign_keys_for_diagram_builder, primary_keys, column_types
+                    tables_structure, foreign_keys_for_diagram_builder, primary_keys, column_types, direction
                 )
             elif engine == 'eralchemy':
                 ERAlchemyHandler(db_name, user, password, host).start_handler()
             # Will doing diagrams by 3 way if type of engine does not choose.
             else:
                 DBMLRenderer(db_name).start_handler(
-                     tables_structure, foreign_keys_for_diagram_builder, primary_keys, column_types
+                     tables_structure, foreign_keys_for_diagram_builder, primary_keys, column_types, direction
                 )
                 PlantUMLBilder(db_name).start_handler(
-                    tables_structure, foreign_keys_for_diagram_builder, keys_in_table, primary_keys
+                    tables_structure, foreign_keys_for_diagram_builder, keys_in_table, primary_keys, direction
                 )
                 ERAlchemyHandler(db_name, user, password, host).start_handler()
 
@@ -59,8 +59,13 @@ if __name__ == "__main__":
              "PlantUML - write 'plantuml'.\nDBML-renderer - write 'dbml-r'.\n"
              "Eralchemy - write 'eralchemy'."
     )
+    parser.add_argument(
+        "--direction", required=False, help="By default is '1', can be '2'. Affects the layout of tables."
+    )
+
 
     args = parser.parse_args()
-    main(args.host, args.port, args.user, args.password, args.db_name, args.schema_name, args.engine)
+    main(args.host, args.port, args.user, args.password, args.db_name, args.schema_name, args.engine, args.direction)
+
 
 

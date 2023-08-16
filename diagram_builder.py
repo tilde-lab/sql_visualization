@@ -43,7 +43,7 @@ class PlantUMLBilder():
 
     def constructor(
             self, tables: dict, communication: dict, keys_in_table:
-            dict, primary_key: dict
+            dict, primary_key: dict, direction_default: str
     ) -> str:
         """
         Func includes code development for plotting diagram.
@@ -105,7 +105,11 @@ class PlantUMLBilder():
 
                 if (table_from, key_from_start, key_from_finish, tabel_to) not in done_tabel:
                     color = color_for_keys[(table_from, key_from_start)]
-                    from_left_to_right = self.block_allocation(communication, table_from, tabel_to)
+                    # if direction_default = '2' is selected, then all links will be from left to right.
+                    if direction_default == "2":
+                        from_left_to_right = self.block_allocation_by_key(communication, table_from)
+                    else:
+                        from_left_to_right = self.block_allocation(table_from, tabel_to)
                     if from_left_to_right:
                         relation = \
                             f' {table_from}::{key_from_start} --{color}' \
@@ -115,8 +119,6 @@ class PlantUMLBilder():
                             f'{tabel_to}::{key_from_finish} --{color}' \
                             f' {table_from}::{key_from_start}\n'
                     connection += relation
-                    # done_tabel.append((table_from, key_from_start, key_from_finish, tabel_to))
-                    # done_tabel.append((tabel_to, key_from_finish, key_from_start, table_from))
                     communication_code += connection
 
         uml_code = '@startuml\n' \
@@ -128,9 +130,32 @@ class PlantUMLBilder():
                      '@enduml'
         return uml_code
 
-    def together_allocation(self, communication):
+    def block_allocation_by_key(self, communication: dict, tabel_from: str) -> bool:
+        """
+        Affects the layout of tables.
+        Determines the location based on the number of relationships from a particular key.
+        """
+        data_about_communication = communication[tabel_from]
+        if len(data_about_communication) > 4:
+            if tabel_from not in self.construction_stage:
+                self.construction_stage[tabel_from] = 1
+                return True
+            else:
+                self.construction_stage[tabel_from] += 1
+                # communication will do from right to left.
+                if len(data_about_communication) // 2 < self.construction_stage[tabel_from]:
+                    return False
+                # communication will do from left to right.
+                else:
+                    return True
+        else:
+            return True
+
+    def together_allocation(self, communication) -> str:
+        """
+        Can implement block grouping.
+        """
         code = '\n\ntogether {'
-        # TODO: I can make hiden link. It will help group unlinked tabel. (now i remove unlinked tabels)
         for tabel in communication.keys():
             if self.numeric_of_conn[tabel] == 0:
                 code += f'\nclass {tabel}'
@@ -141,9 +166,10 @@ class PlantUMLBilder():
             code += '}\n'
             return code
 
-    def block_allocation(self, communication: dict, tabel_from: str, tabel_to) -> bool:
+    def block_allocation(self, tabel_from: str, tabel_to) -> bool:
         """
         Func decides on the order in which related blocks are placed.
+        Determines the location based on the number of relationships from specific table.
         return: bool.
         """
         # Add stage of implemented link for tracking in next.
@@ -241,13 +267,13 @@ class PlantUMLBilder():
 
     def start_handler(
             self, tables_structure: dict, foreign_keys_for_diagram_builder: dict,
-            keys_in_table: dict, primary_keys: dict
+            keys_in_table: dict, primary_keys: dict, direction_default: str
     ):
         """
         Start building a diagram based on data about the database.
         """
         uml_code = self.constructor(
-            tables_structure, foreign_keys_for_diagram_builder, keys_in_table, primary_keys
+            tables_structure, foreign_keys_for_diagram_builder, keys_in_table, primary_keys, direction_default
         )
         self.save_uml_code(uml_code, tables_structure)
         self.build_diagram()

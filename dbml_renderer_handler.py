@@ -48,7 +48,8 @@ class DBMLRenderer():
                     self.numeric_of_conn[list(conn.keys())[0]] += 1
 
     def constructor_handler(
-            self, tables_structure: dict, foreign_keys_for_diagram_builder: dict, primary_keys: dict, column_types: dict
+            self, tables_structure: dict, foreign_keys_for_diagram_builder: dict, primary_keys: dict,
+            column_types: dict, direction_default: int
     ) -> str:
         """
         Func creates dbml-code.
@@ -70,46 +71,48 @@ class DBMLRenderer():
                 dbml_code += tabel_code
 
         # Creates code with information about connections between tables.
-        for tabel_from in foreign_keys_for_diagram_builder.keys():
-            for conn_info in foreign_keys_for_diagram_builder[tabel_from]:
+        for table_from in foreign_keys_for_diagram_builder.keys():
+            for conn_info in foreign_keys_for_diagram_builder[table_from]:
                 tabel_to = list(conn_info.keys())[0]
                 key_from = conn_info[tabel_to][0]
                 key_to = conn_info[tabel_to][1]
 
-                # FIXME: not implemented direction.
-                direction = self.block_allocation(foreign_keys_for_diagram_builder, tabel_from, tabel_to)
-                if direction:
-                    conn_code = f"Ref: {tabel_from}.{key_from} > {tabel_to}.{key_to}\n"
+                # if direction_default = '2' is selected, then all links will be from left to right.
+                if direction_default == "2":
+                    direction = True
                 else:
-                    conn_code = f"Ref: {tabel_to}.{key_to} < {tabel_from}.{key_from}\n"
+                    direction = self.block_allocation(table_from, tabel_to)
+                if direction:
+                    conn_code = f"Ref: {table_from}.{key_from} > {tabel_to}.{key_to}\n"
+                else:
+                    conn_code = f"Ref: {tabel_to}.{key_to} < {table_from}.{key_from}\n"
                 if conn_code not in dbml_code:
                     dbml_code += conn_code
         return dbml_code
 
-    def block_allocation(self, communication: dict, tabel_from: str, tabel_to) -> bool:
+    def block_allocation(self, table_from: str, tabel_to) -> bool:
         """
         Func decides on the order in which related blocks are placed.
         return: bool.
         """
-        print(tabel_from, tabel_to)
-        if tabel_from not in self.construction_stage or tabel_to not in self.construction_stage:
-            if tabel_from not in self.construction_stage and tabel_to not in self.construction_stage:
-                self.construction_stage[tabel_from] = 1
+        if table_from not in self.construction_stage or tabel_to not in self.construction_stage:
+            if table_from not in self.construction_stage and tabel_to not in self.construction_stage:
+                self.construction_stage[table_from] = 1
                 self.construction_stage[tabel_to] = 1
-            if tabel_from not in self.construction_stage:
-                self.construction_stage[tabel_from] = 1
+            if table_from not in self.construction_stage:
+                self.construction_stage[table_from] = 1
                 self.construction_stage[tabel_to] += 1
             if tabel_to not in self.construction_stage:
                 self.construction_stage[tabel_to] = 1
-                self.construction_stage[tabel_from] += 1
+                self.construction_stage[table_from] += 1
         else:
-            self.construction_stage[tabel_from] += 1
+            self.construction_stage[table_from] += 1
             self.construction_stage[tabel_to] += 1
-        # если tabel_from многосвязный
-        if self.numeric_of_conn[tabel_from] > 4 and self.numeric_of_conn[tabel_to] <= 4:
+        # если table_from многосвязный
+        if self.numeric_of_conn[table_from] > 4 and self.numeric_of_conn[tabel_to] <= 4:
 
             # communication will do from right to left.
-            if self.numeric_of_conn[tabel_from] // 2 < self.construction_stage[tabel_from]:
+            if self.numeric_of_conn[table_from] // 2 < self.construction_stage[table_from]:
                 return False
             # communication will do from left to right.
             else:
@@ -169,13 +172,13 @@ class DBMLRenderer():
         os.remove(r'demo.svg')
 
     def start_handler(
-            self, tables_structure, foreign_keys_for_diagram_builder, primary_keys, column_types
+            self, tables_structure, foreign_keys_for_diagram_builder, primary_keys, column_types, direction
     ):
         """
         Performs the functions of creating diagrams.
         """
         dbml_code = self.constructor_handler(
-            tables_structure, foreign_keys_for_diagram_builder, primary_keys, column_types
+            tables_structure, foreign_keys_for_diagram_builder, primary_keys, column_types, direction
         )
         self.save_dbml_folder(dbml_code)
         if self.create_diagram_handler():
