@@ -245,12 +245,7 @@ class ERAlchemyHandler():
 
         url = f'postgresql://{self.user_name}:{self.password}@{self.host}/{self.name_db}'
         output_path = f'./diagram_folder/{self.name_db}_{self.date_today}_.png'
-        try:
-            render_er(url, output_path)
-        except:
-            print(r"Failed launched 'ERAlchemy'.")
-        else:
-            print(r"Successfully launched 'ERAlchemy'.")
+        render_er(url, output_path)
 
 
 

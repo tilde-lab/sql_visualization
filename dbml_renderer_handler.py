@@ -149,13 +149,8 @@ class DBMLRenderer():
             os.makedirs('diagram_folder')
 
         command_line = r"dbml-renderer -i demo.dbml -o demo.svg"
-        try:
-            subprocess.run(command_line)
-        except:
-            print("Failed to start 'dbml-renderer'.")
-            return
-        else:
-            print("Successfully launched 'dbml-renderer'.")
+        subprocess.run(command_line)
+
 
         while answer == False:
             try:
