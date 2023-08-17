@@ -142,8 +142,9 @@ class PostgreSQL_handler():
             if results != []:
                 primary_keys = [i[0] for i in results]
                 self.primary_keys[tabel] = primary_keys
-            else:
-                print('Tables do not have primary keys.')
+
+        if self.primary_keys == {}:
+            print('Tables do not have primary keys.')
 
     def data_preparation(self):
         """

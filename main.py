@@ -5,7 +5,8 @@ The program uses from the console. To run it, you need to go to the project dire
 use the command in the console:
 
 $ python main.py --host HOST --port PORT --user USER --password PASSWORD
---db_name DB_NAME --schema_name SCHEMA_NAME --engine ENGINE
+--db_name DB_NAME --schema_name SCHEMA_NAME --engine ENGINE --direction DIRECTION
+
 """
 import argparse
 from diagram_builder import PlantUMLBilder
@@ -65,5 +66,3 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     main(args.host, args.port, args.user, args.password, args.db_name, args.schema_name, args.engine, args.direction)
-
-
