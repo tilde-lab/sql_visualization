@@ -63,8 +63,11 @@ class DBMLRenderer():
                 tabel_code = f"Table {tabel} "+"{\n"
                 for column in tables_structure[tabel]:
                     column_type = self.define_column_type(column_types, tabel, column)
-                    if column in primary_keys[tabel]:
-                        tabel_code += f'{column} {column_type} [primary key]\n'
+                    if tabel in primary_keys:
+                        if column in primary_keys[tabel]:
+                            tabel_code += f'{column} {column_type} [primary key]\n'
+                        else:
+                            tabel_code += f'{column} {column_type}\n'
                     else:
                         tabel_code += f'{column} {column_type}\n'
                 tabel_code += '}\n\n'

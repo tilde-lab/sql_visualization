@@ -63,9 +63,7 @@ if __name__ == "__main__":
         "--direction", required=False, help="By default is '1', can be '2'. Affects the layout of tables."
     )
 
-
     args = parser.parse_args()
     main(args.host, args.port, args.user, args.password, args.db_name, args.schema_name, args.engine, args.direction)
-
 
 

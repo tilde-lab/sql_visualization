@@ -118,8 +118,9 @@ class PlantUMLBilder():
                         relation = \
                             f'{tabel_to}::{key_from_finish} --{color}' \
                             f' {table_from}::{key_from_start}\n'
-                    connection += relation
-                    communication_code += connection
+                    if relation not in connection and relation not in communication_code:
+                        connection += relation
+                        communication_code += connection
 
         uml_code = '@startuml\n' \
                    '!define ClassFontName "Arial"\n\n' \
