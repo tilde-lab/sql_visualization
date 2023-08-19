@@ -1,5 +1,5 @@
-import psycopg2
-from psycopg2 import Error
+import pg8000
+from pg8000 import Error
 from typing import Dict
 from eralchemy import render_er
 import os
@@ -13,8 +13,8 @@ class PostgreSQL_handler():
     """
     def __init__(self, host, port, user, password, db_name, schema_name):
         try:
-            self.conn = self.connection = psycopg2.connect(
-                dbname=db_name, user=user, password=password, host=host, port=port
+            self.conn = self.connection = pg8000.connect(
+                database=db_name, user=user, password=password, host=host, port=port
             )
         except Error as e:
             print(f"{e}")
