@@ -1,8 +1,5 @@
 """
-Program launch.
-
-The program uses from the console. To run it, you need to go to the project directory,
-use the command in the console:
+This visualizer is CLI-only. Type in the project directory to run:
 
 $ python main.py --host HOST --port PORT --user USER --password PASSWORD
 --db_name DB_NAME --schema_name SCHEMA_NAME --engine ENGINE --direction DIRECTION
@@ -10,8 +7,7 @@ $ python main.py --host HOST --port PORT --user USER --password PASSWORD
 """
 import argparse
 from diagram_builder import PlantUMLBilder
-from postgre_handler import ERAlchemyHandler
-from postgre_handler import PostgreSQL_handler
+from postgres_handler import ERAlchemyHandler, PostgreSQL_handler
 from dbml_renderer_handler import DBMLRenderer
 
 
@@ -20,32 +16,35 @@ def main(host, port, user, password, db_name, schema_name, engine=None, directio
         answer = \
             PostgreSQL_handler(host, port, user, password, db_name, schema_name).start_handler()
     except NameError:
-        print('Attention! In db not tables.')
-    else:
-        if answer:
-            tables_structure, foreign_keys_for_diagram_builder, keys_in_table, \
-                number_of_keys, primary_keys, column_types = answer
-            if engine == 'plantuml':
-                PlantUMLBilder(db_name).start_handler(
-                    tables_structure, foreign_keys_for_diagram_builder, keys_in_table, primary_keys, direction
-                )
-            elif engine == 'dbml-r':
-                DBMLRenderer(db_name).start_handler(
-                    tables_structure, foreign_keys_for_diagram_builder, primary_keys, column_types, direction
-                )
-            elif engine == 'eralchemy':
-                ERAlchemyHandler(db_name, user, password, host).start_handler()
-            # Will doing diagrams by 3 way if type of engine does not choose.
-            else:
-                DBMLRenderer(db_name).start_handler(
-                     tables_structure, foreign_keys_for_diagram_builder, primary_keys, column_types, direction
-                )
-                PlantUMLBilder(db_name).start_handler(
-                    tables_structure, foreign_keys_for_diagram_builder, keys_in_table, primary_keys, direction
-                )
-                ERAlchemyHandler(db_name, user, password, host).start_handler()
+        print('No tables found!')
+        raise
 
-# Launching the program from console.
+    tables_structure, foreign_keys_for_diagram_builder, keys_in_table, \
+        number_of_keys, primary_keys, column_types = answer
+
+    if engine == 'plantuml':
+        PlantUMLBilder(db_name).start_handler(
+            tables_structure, foreign_keys_for_diagram_builder, keys_in_table, primary_keys, direction
+        )
+
+    elif engine == 'dbml-r':
+        DBMLRenderer(db_name).start_handler(
+            tables_structure, foreign_keys_for_diagram_builder, primary_keys, column_types, direction
+        )
+
+    elif engine == 'eralchemy':
+        ERAlchemyHandler(db_name, user, password, host).start_handler()
+
+    else:
+        DBMLRenderer(db_name).start_handler(
+             tables_structure, foreign_keys_for_diagram_builder, primary_keys, column_types, direction
+        )
+        PlantUMLBilder(db_name).start_handler(
+            tables_structure, foreign_keys_for_diagram_builder, keys_in_table, primary_keys, direction
+        )
+        ERAlchemyHandler(db_name, user, password, host).start_handler()
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Diagram Builder")
     parser.add_argument("--host", required=True, help="Database host")
@@ -61,7 +60,7 @@ if __name__ == "__main__":
              "Eralchemy - write 'eralchemy'."
     )
     parser.add_argument(
-        "--direction", required=False, help="By default is '1', can be '2'. Affects the layout of tables."
+        "--direction", required=False, help="By default is '1', can be also '2'. Affects the layout of tables."
     )
 
     args = parser.parse_args()

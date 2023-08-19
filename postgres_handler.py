@@ -5,6 +5,7 @@ from eralchemy import render_er
 import os
 from datetime import datetime
 
+
 class PostgreSQL_handler():
     """
     The class gets the necessary information about the database.
@@ -251,6 +252,3 @@ class ERAlchemyHandler():
             print(r"Failed launched 'ERAlchemy'.")
         else:
             print(r"Successfully launched 'ERAlchemy'.")
-
-
-
