@@ -19,7 +19,7 @@ class PlantUMLBilder():
     def __init__(self, db_name):
         self.construction_stage = {}
         self.date_today = datetime.now().date().strftime('%Y-%m-%d')
-        self.path_to_plantuml = "./plantuml.jar"
+        self.path_to_plantuml = "third_party/plantuml.jar"
         self.db_name = db_name
         self.keys_to_bold = []
         self.numeric_of_conn = {}
@@ -124,6 +124,7 @@ class PlantUMLBilder():
 
         uml_code = '@startuml\n' \
                    '!define ClassFontName "Arial"\n\n' \
+                   'hide circle\n'\
                    'left to right direction\n' \
                    + f'\n{tables_code}\n' \
                    + f'{communication_code}\n' \
