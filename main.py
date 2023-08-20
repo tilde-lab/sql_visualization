@@ -9,6 +9,7 @@ import argparse
 from diagram_builder import PlantUMLBilder
 from postgres_handler import ERAlchemyHandler, PostgreSQL_handler
 from dbml_renderer_handler import DBMLRenderer
+from graphviz_dot_handler import Graphviz_handler
 
 
 def main(host, port, user, password, db_name, schema_name, engine=None, direction='1'):
@@ -25,6 +26,11 @@ def main(host, port, user, password, db_name, schema_name, engine=None, directio
     if engine == 'plantuml':
         PlantUMLBilder(db_name).start_handler(
             tables_structure, foreign_keys_for_diagram_builder, keys_in_table, primary_keys, direction
+        )
+
+    elif engine == 'dot-r':
+        Graphviz_handler(db_name).start_handler(
+            tables_structure, foreign_keys_for_diagram_builder, primary_keys
         )
 
     elif engine == 'dbml-r':
