@@ -10,6 +10,7 @@ Using this method, we cannot customize links, chart color, shape, etc. This tool
 import cairosvg
 import subprocess
 import os
+import shutil
 from datetime import datetime
 
 
@@ -19,11 +20,12 @@ class DBMLRenderer():
     It builds the dbml-code, which will then be passed to the input of the dbml-renderer.
     Unlike PlantUML Builder, the resulting diagram will show data types.
     """
-    def __init__(self, db_name: str):
+    def __init__(self, db_name: str, output_path: str):
         self.name_db = db_name
         self.date_today = datetime.now().date().strftime('%Y-%m-%d')
         self.construction_stage = {}
         self.numeric_of_conn = {}
+        self.output_path = output_path
 
     def define_column_type(self, column_types: dict, tabel: str, column: str) -> str:
         """
@@ -148,7 +150,7 @@ class DBMLRenderer():
         if not os.path.exists('diagram_folder'):
             os.makedirs('diagram_folder')
 
-        command_line = ["dbml-renderer", "-i", "demo.dbml", "-o", "demo.svg"]
+        command_line = [r"C:\Users\Пользователь\AppData\Roaming\npm\dbml-renderer.cmd", "-i", "demo.dbml", "-o", "demo.svg"]
         try:
             subprocess.run(command_line)
         except:
@@ -163,6 +165,8 @@ class DBMLRenderer():
                     url=r'demo.svg',
                     write_to=f'./diagram_folder/{self.name_db}_{self.date_today}.jpg', background_color="#FFFFFF"
                 )
+                if self.output_path:
+                    shutil.move(f'./diagram_folder/{self.name_db}_{self.date_today}.jpg', self.output_path)
             except:
                 continue
         return True

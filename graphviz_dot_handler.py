@@ -1,3 +1,7 @@
+"""
+This way generates a diagram using Graphviz-only.
+The file is constructed in DOT format and transferred to Graphviz.
+"""
 from datetime import datetime
 import os
 import subprocess
@@ -7,11 +11,12 @@ class Graphviz_handler():
     The class performs the construction of the diagram by Graphviz.
     It builds DOT-code with which contains the markup for the diagram.
     """
-    def __init__(self, db_name: str):
+    def __init__(self, db_name: str, output_path: str):
         self.name_db = db_name
         self.date_today = datetime.now().date().strftime('%Y-%m-%d')
         self.construction_stage = {}
         self.numeric_of_conn = {}
+        self.output_path = output_path
 
     def dot_constructor(
             self, tables_structure: dict, foreign_keys_for_diagram_builder: dict,
@@ -72,6 +77,26 @@ class Graphviz_handler():
 
         return code_for_all_tabels
 
+    def linear_position_distribution(self, tables_structure: dict) -> str:
+        if len(tables_structure.keys()) < 10:
+            coef = 3
+        elif 16 >= len(tables_structure.keys()) >= 10:
+            coef = 4
+        else:
+            coef = 5
+        code = ''
+        code_for_row = '{ rank = same; '
+        cnt = 1
+        for table in tables_structure.keys():
+            cnt += 1
+            code_for_row += f'"{table.title()}"; '
+            if cnt == coef:
+                code_for_row += '}\n'
+                code += code_for_row
+                code_for_row = '{ rank = same; '
+                cnt = 1
+        return code
+
     def block_allocation(self, table_from: str, tabel_to) -> bool:
         """
         Func decides on the order in which related blocks are placed.
@@ -114,8 +139,18 @@ class Graphviz_handler():
         if not os.path.exists('diagram_folder'):
             os.makedirs('diagram_folder')
 
-        cmd = f'dot -Tpng demo.dot -o ./diagram_folder/{self.name_db}_{self.date_today}.png'
-        subprocess.run(cmd)
+        if not self.output_path:
+            cmd = f'dot -Tpng demo.dot -o ./diagram_folder/{self.name_db}_{self.date_today}.png'
+        else:
+            self.output_path = self.output_path.replace("\\", '/')
+            cmd = f'dot -Tpng demo.dot -o {self.output_path}/{self.name_db}_{self.date_today}.png'
+
+        try:
+            subprocess.run(cmd)
+        except:
+            print("Failed to start 'dot-renderer'.")
+        else:
+            print("Successfully launched 'dot-renderer'.")
 
     def delete_dot(self):
         os.remove(r'demo.dot')

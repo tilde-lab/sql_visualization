@@ -233,19 +233,23 @@ class ERAlchemyHandler():
     It accesses an existing table by path and builds a diagram.
     Unlike other methods, it does not need to provide ready-made data.
     """
-    def __init__(self, db_name: str, user_name: str, password: str, host: str):
+    def __init__(self, db_name: str, user_name: str, password: str, host: str, output_path: str):
         self.name_db = db_name
         self.user_name = user_name
         self.password = password
         self.host = host
         self.date_today = datetime.now().date().strftime('%Y-%m-%d')
+        self.output_path = output_path
 
     def start_handler(self):
         if not os.path.exists('diagram_folder'):
             os.makedirs('diagram_folder')
 
         url = f'postgresql://{self.user_name}:{self.password}@{self.host}/{self.name_db}'
-        output_path = f'./diagram_folder/{self.name_db}_{self.date_today}_.png'
+        if not self.output_path:
+            output_path = f'./diagram_folder/{self.name_db}_{self.date_today}_.png'
+        else:
+            output_path = f'{self.output_path}/{self.name_db}_{self.date_today}_.png'
         try:
             render_er(url, output_path)
         except:
