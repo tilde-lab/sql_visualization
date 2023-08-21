@@ -150,7 +150,7 @@ class DBMLRenderer():
         if not os.path.exists('diagram_folder'):
             os.makedirs('diagram_folder')
 
-        command_line = [r"C:\Users\Пользователь\AppData\Roaming\npm\dbml-renderer.cmd", "-i", "demo.dbml", "-o", "demo.svg"]
+        command_line = [r"dbml-renderer", "-i", "demo.dbml", "-o", "demo.svg"]
         try:
             subprocess.run(command_line)
         except:
