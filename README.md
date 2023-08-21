@@ -48,7 +48,7 @@ python main.py --host HOST --port PORT --user USER --password PASSWORD \
 
 If you are not satisfied with the location of the blocks on the diagram, change their location by adding the argument *DIRECTION* = '2'.
 
-If you need to save image in specific folder, add an argument *PATH* with a path before it.
+If you need to save image in specific folder, add an argument *PATH* with a path.
 
 
 
