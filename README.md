@@ -1,5 +1,5 @@
 # database_visualization
-Generate Entity-Relationship Diagrams from PostgreSQL by PlantUML, DBML-renderer, ERAlchemy.
+Generate Entity-Relationship Diagrams from PostgreSQL by PlantUML, DBML-renderer, ERAlchemy, Graphviz.
 ### Requirements
 - PostgreSQL*
 - graphviz==2.49.0
@@ -33,18 +33,23 @@ Run:
 
 ```bash
 python main.py --host HOST --port PORT --user USER --password PASSWORD \
---db_name DB_NAME --schema_name SCHEMA_NAME --engine ENGINE --direction DIRECTION
+--db_name DB_NAME --schema_name SCHEMA_NAME --engine ENGINE --direction DIRECTION --output_path PATH
 ```
-*DIRECTION* and *ENGINE* is optional arguments.
+*DIRECTION*, *ENGINE* and *PATH* are optional arguments.
 
 **Available engines:**
 
 - 'plantuml'
 - 'eralchemy'
 - 'dbml-r'
+- 'dot-r'
 
 **Available direction:**
+
 If you are not satisfied with the location of the blocks on the diagram, change their location by adding the argument *DIRECTION* = '2'.
+
+If you need to save image in specific folder, add an argument *PATH* with a path before it.
+
 
 
 
