@@ -19,6 +19,9 @@ def main(host, port, user, password, db_name, schema_name, engine=None, directio
     except NameError:
         print('No tables found!')
         raise
+    else:
+        if not answer:
+            print('Failed to get database data.')
 
     tables_structure, foreign_keys_for_diagram_builder, keys_in_table, \
         number_of_keys, primary_keys, column_types = answer

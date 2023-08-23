@@ -143,11 +143,7 @@ class Graphviz_handler():
         if not os.path.exists('diagram_folder'):
             os.makedirs('diagram_folder')
 
-        # if not self.output_path:
         cmd = f'dot -Tpng demo.dot -o ./diagram_folder/{self.name_db}_{self.date_today}.png'
-        # else:
-        #     self.output_path = self.output_path.replace("\\", '/')
-        #     cmd = f'dot -Tpng demo.dot -o {self.output_path}/{self.name_db}_{self.date_today}.png'
 
         try:
             subprocess.run(cmd)
