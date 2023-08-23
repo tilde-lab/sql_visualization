@@ -10,8 +10,8 @@ Using this method, we cannot customize links, chart color, shape, etc. This tool
 import cairosvg
 import subprocess
 import os
-import shutil
 from datetime import datetime
+from saver import Saver
 
 
 class DBMLRenderer():
@@ -26,6 +26,8 @@ class DBMLRenderer():
         self.construction_stage = {}
         self.numeric_of_conn = {}
         self.output_path = output_path
+        self.img_name = f'{self.name_db}_{self.date_today}.jpg'
+        self.saver = Saver(self.output_path, self.img_name)
 
     def define_column_type(self, column_types: dict, tabel: str, column: str) -> str:
         """
@@ -166,7 +168,7 @@ class DBMLRenderer():
                     write_to=f'./diagram_folder/{self.name_db}_{self.date_today}.jpg', background_color="#FFFFFF"
                 )
                 if self.output_path:
-                    shutil.move(f'./diagram_folder/{self.name_db}_{self.date_today}.jpg', self.output_path)
+                    self.saver.save()
             except:
                 continue
         return True

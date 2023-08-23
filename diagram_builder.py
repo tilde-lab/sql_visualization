@@ -9,7 +9,7 @@ Graphviz independently builds a diagram based on the requirements in the code.
 import subprocess
 from datetime import datetime
 import os
-import shutil
+from saver import Saver
 
 
 class PlantUMLBilder():
@@ -25,6 +25,8 @@ class PlantUMLBilder():
         self.keys_to_bold = []
         self.numeric_of_conn = {}
         self.output_path = output_path
+        self.img_name = f'{self.db_name}__{self.date_today}.png'
+        self.saver = Saver(self.output_path, self.img_name)
         # bold version.
         self.colors_for_link = [r'[#f51505,bold]', r'[#877951,bold]', r'[#0057f7,bold]',
                                 r'[#21a105,bold]', r'[#eb8b05,bold]', r'[#d005eb,bold]',
@@ -264,10 +266,8 @@ class PlantUMLBilder():
         subprocess.call(["java", "-jar", self.path_to_plantuml,
                                  f"{self.db_name}__{self.date_today}.txt", f"-o{'diagram_folder'}", "-tpng"])
         if self.output_path:
-            try:
-                shutil.move(f'./diagram_folder/{self.db_name}__{self.date_today}.png', self.output_path)
-            except:
-                print(f'"{self.db_name}__{self.date_today}.png" already exists')
+            self.saver.save()
+
 
     def delete_uml_code_file(self):
         """

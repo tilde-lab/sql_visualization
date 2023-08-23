@@ -5,6 +5,8 @@ The file is constructed in DOT format and transferred to Graphviz.
 from datetime import datetime
 import os
 import subprocess
+from saver import Saver
+
 
 class Graphviz_handler():
     """
@@ -17,6 +19,8 @@ class Graphviz_handler():
         self.construction_stage = {}
         self.numeric_of_conn = {}
         self.output_path = output_path
+        self.img_name = f'{self.name_db}_{self.date_today}.png'
+        self.saver = Saver(self.output_path, self.img_name)
 
     def dot_constructor(
             self, tables_structure: dict, foreign_keys_for_diagram_builder: dict,
@@ -139,18 +143,22 @@ class Graphviz_handler():
         if not os.path.exists('diagram_folder'):
             os.makedirs('diagram_folder')
 
-        if not self.output_path:
-            cmd = f'dot -Tpng demo.dot -o ./diagram_folder/{self.name_db}_{self.date_today}.png'
-        else:
-            self.output_path = self.output_path.replace("\\", '/')
-            cmd = f'dot -Tpng demo.dot -o {self.output_path}/{self.name_db}_{self.date_today}.png'
+        # if not self.output_path:
+        cmd = f'dot -Tpng demo.dot -o ./diagram_folder/{self.name_db}_{self.date_today}.png'
+        # else:
+        #     self.output_path = self.output_path.replace("\\", '/')
+        #     cmd = f'dot -Tpng demo.dot -o {self.output_path}/{self.name_db}_{self.date_today}.png'
 
         try:
             subprocess.run(cmd)
         except:
             print("Failed to start 'dot-renderer'.")
         else:
-            print("Successfully launched 'dot-renderer'.")
+            if self.output_path:
+                self.saver.save()
+                print("Successfully launched 'dot-renderer'.")
+            else:
+                print("Successfully launched 'dot-renderer'.")
 
     def delete_dot(self):
         os.remove(r'demo.dot')

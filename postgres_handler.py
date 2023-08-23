@@ -4,6 +4,7 @@ from typing import Dict
 from eralchemy import render_er
 import os
 from datetime import datetime
+from saver import Saver
 
 
 class PostgreSQL_handler():
@@ -240,19 +241,20 @@ class ERAlchemyHandler():
         self.host = host
         self.date_today = datetime.now().date().strftime('%Y-%m-%d')
         self.output_path = output_path
+        self.img_name = f'{self.name_db}_{self.date_today}_.png'
+        self.saver = Saver(self.output_path, self.img_name)
 
     def start_handler(self):
         if not os.path.exists('diagram_folder'):
             os.makedirs('diagram_folder')
 
         url = f'postgresql://{self.user_name}:{self.password}@{self.host}/{self.name_db}'
-        if not self.output_path:
-            output_path = f'./diagram_folder/{self.name_db}_{self.date_today}_.png'
-        else:
-            output_path = f'{self.output_path}/{self.name_db}_{self.date_today}_.png'
+        output_path = f'./diagram_folder/{self.name_db}_{self.date_today}_.png'
         try:
             render_er(url, output_path)
         except:
             print(r"Failed launched 'ERAlchemy'.")
         else:
             print(r"Successfully launched 'ERAlchemy'.")
+        if self.output_path:
+            self.saver.save()
