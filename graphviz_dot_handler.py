@@ -143,10 +143,16 @@ class Graphviz_handler():
         if not os.path.exists('diagram_folder'):
             os.makedirs('diagram_folder')
 
-        cmd = f'dot -Tpng demo.dot -o ./diagram_folder/{self.name_db}_{self.date_today}.png'
+        cmd = [
+            'dot', 
+            '-Tpng', 
+            'demo.dot', 
+            '-o', 
+            os.path.join("./diagram_folder", f'{self.name_db}_{self.date_today}.png')
+        ]
 
         try:
-            subprocess.run(cmd)
+            subprocess.run(cmd, check=True)
         except:
             print("Failed to start 'dot-renderer'.")
         else:
